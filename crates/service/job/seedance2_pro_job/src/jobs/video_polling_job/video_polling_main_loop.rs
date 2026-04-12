@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+use chrono::Utc;
 use log::{error, info, warn};
 use pager::notification::notification_details_builder::NotificationDetailsBuilder;
 use pager::notification::notification_urgency::NotificationUrgency;
@@ -117,10 +118,33 @@ async fn run_poll_iteration(deps: &JobDependencies) -> anyhow::Result<()> {
     info!("Done polling page {}. Got {} orders on this page.", total_page_number, page_count);
 
     total_orders_seen += page_count;
+
+    // Check if the last (oldest) order in this page exceeds the max age threshold.
+    // Orders are returned newest-first, so the last order is the oldest.
+    let mut exceeded_max_age = false;
+
+    if let Some(ref max_age) = deps.maybe_max_job_age {
+      let maybe_last_order_created= response.orders
+          .iter()
+          .filter(|order| order.created_at_utc.is_some())
+          .last()
+          .and_then(|order| order.created_at_utc);
+
+      if let Some(last_order_created) = maybe_last_order_created {
+        let order_age = Utc::now() - last_order_created;
+        let too_old = order_age > *max_age;
+        if too_old {
+          info!("Last order on page {} is {} hours old (threshold: {} hours). Stopping pagination.",
+            total_page_number, order_age.num_hours(), max_age.num_hours());
+          exceeded_max_age = true;
+        }
+      }
+    };
+
     batch_orders.extend(response.orders);
 
     cursor = response.next_cursor;
-    let reached_end = cursor.is_none();
+    let reached_end = cursor.is_none() || exceeded_max_age;
 
     // Determine if we should process the current batch now.
     let should_process_batch = reached_end

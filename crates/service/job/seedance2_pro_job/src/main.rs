@@ -43,6 +43,7 @@ const ENV_REGION_NAME: &str = "REGION_NAME";
 const ENV_PUBLIC_BUCKET_NAME: &str = "PUBLIC_BUCKET_NAME";
 const ENV_S3_ENDPOINT: &str = "S3_COMPATIBLE_ENDPOINT_URL";
 const ENV_SEEDANCE2PRO_COOKIES : &str = "SEEDANCE2PRO_COOKIES";
+const ENV_MAX_JOB_AGE_THRESHOLD_HOURS: &str = "MAX_JOB_AGE_THRESHOLD_HOURS";
 
 #[tokio::main]
 async fn main() -> AnyhowResult<()> {
@@ -113,6 +114,13 @@ async fn main() -> AnyhowResult<()> {
     info!("Batch page count: {}", count);
   }
 
+  let maybe_max_job_age = easyenv::try_get_env_num_optional::<i64>(ENV_MAX_JOB_AGE_THRESHOLD_HOURS)?
+      .and_then(chrono::Duration::try_hours);
+
+  if let Some(ref duration) = maybe_max_job_age {
+    info!("Max job age threshold: {} hours", duration.num_hours());
+  }
+
   let (pager, pager_worker) = build_pager(server_environment, &container_environment.hostname);
 
   info!("Spawning pager worker.");
@@ -144,6 +152,7 @@ async fn main() -> AnyhowResult<()> {
     job_stats,
     poll_interval_millis,
     maybe_pages_per_batch,
+    maybe_max_job_age,
     application_shutdown: application_shutdown.clone(),
     pager,
   };
