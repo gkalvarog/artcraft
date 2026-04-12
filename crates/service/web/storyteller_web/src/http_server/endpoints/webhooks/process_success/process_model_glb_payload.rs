@@ -7,12 +7,12 @@ use enums::by_table::media_files::media_file_engine_category::MediaFileEngineCat
 use enums::by_table::media_files::media_file_origin_category::MediaFileOriginCategory;
 use enums::by_table::media_files::media_file_type::MediaFileType;
 use errors::AnyhowResult;
+use fal_client::webhook_api::hydrated::hydrated_webhook_contents::{ModelGlbData, ThumbnailData};
 use hashing::sha256::sha256_hash_bytes::sha256_hash_bytes;
 use log::{info, warn};
 use mimetypes::mimetype_info::mimetype_info::MimetypeInfo;
 use mysql_queries::queries::generic_inference::fal::get_inference_job_by_fal_id::FalJobDetails;
 use mysql_queries::queries::media_files::create::insert_builder::media_file_insert_builder::MediaFileInsertBuilder;
-use serde_json::{Map, Value};
 use mysql_queries::queries::media_files::edit::set_media_file_cover_image::{set_media_file_cover_image, UpdateArgs};
 use tokens::tokens::media_files::MediaFileToken;
 
@@ -55,34 +55,15 @@ const PREFIX : Option<&str> = Some("artcraft_");
   
 */
 
-#[derive(Deserialize, Debug)]
-pub struct FalMediaPayload {
-  pub content_type: Option<String>,
-  pub file_name: Option<String>,
-  pub file_size: Option<usize>,
-  pub url: Option<String>,
-}
-
 pub async fn process_model_glb_payload(
-  payload: &Map<String, Value>,
+  model_glb_data: &ModelGlbData,
+  maybe_thumbnail_data: Option<&ThumbnailData>,
   job: &FalJobDetails,
   server_state: &ServerState,
 ) -> AnyhowResult<MediaFileToken> {
-  
-  let model_glb_value = payload.get("model_glb")
-      .ok_or_else(|| anyhow!("no `model_mesh` key in payload"))?;
-
-  info!("Fal Model Glb Payload: {:?}", model_glb_value);
-  
-  let mesh: FalMediaPayload = serde_json::from_value(model_glb_value.clone())?;
-
-  let mesh_url = mesh.url
+  let mesh_url = model_glb_data.url
       .as_deref()
-      .ok_or_else(|| anyhow!("no `url` in image payload"))?;
-  
-  //let mime_type = mesh.content_type
-  //    .as_deref()
-  //    .ok_or_else(|| anyhow!("no `content_type` in mesh payload"))?;
+      .ok_or_else(|| anyhow!("no `url` in model glb payload"))?;
 
   let file_bytes = http_download_url_to_bytes(mesh_url)
       .await
@@ -135,7 +116,7 @@ pub async fn process_model_glb_payload(
   info!("Glb media file uploaded with token: {}", media_token);
   
   let result = try_to_attach_thumbnail(
-    payload,
+    maybe_thumbnail_data,
     job,
     server_state,
     &media_token,
@@ -150,33 +131,30 @@ pub async fn process_model_glb_payload(
 }
 
 async fn try_to_attach_thumbnail(
-  payload: &Map<String, Value>,
+  maybe_thumbnail_data: Option<&ThumbnailData>,
   job: &FalJobDetails,
   server_state: &ServerState,
   glb_media_token: &MediaFileToken,
 ) -> AnyhowResult<()> {
+  let thumbnail_data = maybe_thumbnail_data
+      .ok_or_else(|| anyhow!("no thumbnail data in extracted contents"))?;
 
-  let thumbnail_value = payload.get("thumbnail")
-      .ok_or_else(|| anyhow!("no `thumbnail` key in payload"))?;
+  info!("Fal Thumbnail Data: {:?}", thumbnail_data);
 
-  info!("Fal Thumbnail Payload: {:?}", thumbnail_value);
-
-  let thumbnail : FalMediaPayload = serde_json::from_value(thumbnail_value.clone())?;
-
-  let mesh_url = thumbnail.url
+  let thumbnail_url = thumbnail_data.url
       .as_deref()
-      .ok_or_else(|| anyhow!("no `url` in image payload"))?;
+      .ok_or_else(|| anyhow!("no `url` in thumbnail payload"))?;
 
-  let file_bytes = http_download_url_to_bytes(mesh_url)
+  let file_bytes = http_download_url_to_bytes(thumbnail_url)
       .await
-      .map_err(|e| anyhow!("Failed to download image: {:?}", e))?;
+      .map_err(|e| anyhow!("Failed to download thumbnail image: {:?}", e))?;
 
   let mimetype_info = MimetypeInfo::get_for_bytes(&file_bytes)
       .ok_or_else(|| anyhow!("Failed to get mimetype info"))?;
 
   let mime_type = mimetype_info.mime_type();
 
-  info!("Mime type of image: {}", mime_type);
+  info!("Mime type of thumbnail image: {}", mime_type);
 
   let media_file_type = MediaFileType::try_from_mime_type(mime_type)
       .ok_or_else(|| anyhow!("Unsupported media file type: {}", mime_type))?;
