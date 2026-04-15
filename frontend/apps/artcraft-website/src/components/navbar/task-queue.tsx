@@ -519,7 +519,7 @@ function jobsToInProgress(jobs: Job[]): InProgressTask[] {
               (m) => m.tauriId === modelType || m.id === modelType,
             )
           : undefined;
-        duration = model?.progressBarTime ?? (isVideo ? 120000 : 30000);
+        duration = model?.progressBarTime ?? (isVideo ? 900000 : 30000);
         taskDurationCache.set(j.job_token, duration);
       }
 
