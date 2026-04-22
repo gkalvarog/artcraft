@@ -16,6 +16,7 @@ export const MODEL_TYPE_TO_CREATOR: Record<string, ModelCreator> = {
   flux_pro_1_1_ultra: ModelCreator.BlackForestLabs,
   gpt_image_1: ModelCreator.OpenAi,
   gpt_image_1p5: ModelCreator.OpenAi,
+  gpt_image_2: ModelCreator.OpenAi,
   // Kling — p-style IDs
   kling_1p6_pro: ModelCreator.Kling,
   kling_2p1_pro: ModelCreator.Kling,
@@ -166,6 +167,7 @@ export const getModelDisplayName = (modelType: string): string => {
     // OpenAI
     gpt_image_1: "GPT Image 1",
     gpt_image_1p5: "GPT Image 1.5",
+    gpt_image_2: "GPT Image 2",
     sora_2: "Sora 2",
     sora_2_pro: "Sora 2 Pro",
 
