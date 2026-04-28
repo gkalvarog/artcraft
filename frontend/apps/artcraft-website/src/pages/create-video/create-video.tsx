@@ -208,6 +208,7 @@ export default function CreateVideo() {
     [setUi],
   );
   const [isGenerating, setIsGenerating] = useState(false);
+  const isGeneratingRef = useRef(false);
 
   // Reference media (persisted in store so refs survive navigation)
   const refs = useCreateVideoStore((s) => s.refs);
@@ -625,9 +626,8 @@ export default function CreateVideo() {
 
   const imagePickerMax = Math.max(
     1,
-    (isReferenceMode
-      ? (selectedModel?.image_references_max ?? 3)
-      : 1) - referenceImages.length,
+    (isReferenceMode ? (selectedModel?.image_references_max ?? 3) : 1) -
+      referenceImages.length,
   );
 
   const handlePickerSelect = useCallback(
@@ -684,7 +684,15 @@ export default function CreateVideo() {
   }, []);
 
   const handleGenerate = useCallback(async () => {
-    if (!prompt.trim() || isGenerating || needsImage || !selectedModel) return;
+    if (
+      !prompt.trim() ||
+      isGeneratingRef.current ||
+      needsImage ||
+      !selectedModel
+    ) {
+      return;
+    }
+    isGeneratingRef.current = true;
     setIsGenerating(true);
 
     const startFrameToken =
@@ -799,9 +807,9 @@ export default function CreateVideo() {
     window.dispatchEvent(new Event("credits-change"));
     window.dispatchEvent(new Event("task-queue-update"));
     setIsGenerating(false);
+    isGeneratingRef.current = false;
   }, [
     prompt,
-    isGenerating,
     needsImage,
     isReferenceMode,
     selectedModel,
