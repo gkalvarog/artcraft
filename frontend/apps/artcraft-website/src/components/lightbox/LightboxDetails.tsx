@@ -351,7 +351,7 @@ export function LightboxDetails({
                   {createdAt && (
                     <InfoRow
                       label="Created"
-                      value={dayjs(createdAt).format("MMMM D, YYYY")}
+                      value={dayjs(createdAt).format("MMMM D, YYYY h:mm:ss A")}
                     />
                   )}
                 </div>
