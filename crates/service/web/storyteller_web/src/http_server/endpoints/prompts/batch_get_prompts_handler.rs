@@ -131,7 +131,6 @@ pub async fn batch_get_prompts_handler(
 
       BatchPromptInfo {
         token: result.token,
-        prompt_type: result.prompt_type,
         maybe_model_class: result.maybe_model_type.map(|ty| ty.get_model_class()),
         maybe_model_type: result.maybe_model_type,
         maybe_generation_provider: result.maybe_generation_provider,
