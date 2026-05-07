@@ -11,12 +11,12 @@ use crate::generate::generate_video::plan::fal::plan_generate_video_fal_seedance
 use fal_client::requests::webhook::video::image::enqueue_seedance_1p5_pro_image_to_video_webhook::{
   enqueue_seedance_1p5_pro_image_to_video_webhook, EnqueueSeedance1p5ProImageToVideoArgs,
   EnqueueSeedance1p5ProImageToVideoAspectRatio, EnqueueSeedance1p5ProImageToVideoDuration,
-  EnqueueSeedance1p5ProImageToVideoResolution,
+  EnqueueSeedance1p5ProImageToVideoRequest, EnqueueSeedance1p5ProImageToVideoResolution,
 };
 use fal_client::requests::webhook::video::text::enqueue_seedance_1p5_pro_text_to_video_webhook::{
   enqueue_seedance_1p5_pro_text_to_video_webhook, EnqueueSeedance1p5ProTextToVideoArgs,
-  EnqueueSeedance1p5ProTextToVideoAspectRatio, EnqueueSeedance1p5ProTextToVideoDuration,
-  EnqueueSeedance1p5ProTextToVideoResolution,
+  EnqueueSeedance1p5ProTextToVideoRequest, EnqueueSeedance1p5ProTextToVideoAspectRatio,
+  EnqueueSeedance1p5ProTextToVideoDuration, EnqueueSeedance1p5ProTextToVideoResolution,
 };
 
 pub async fn execute_fal_seedance_1p5_pro(
@@ -26,11 +26,13 @@ pub async fn execute_fal_seedance_1p5_pro(
   let webhook_response = match &plan.mode {
     FalSeedance1p5ProMode::TextToVideo => {
       let args = EnqueueSeedance1p5ProTextToVideoArgs {
-        prompt: plan.prompt.clone(),
-        resolution: plan.resolution.map(to_t2v_resolution),
-        duration: plan.duration.map(to_t2v_duration),
-        aspect_ratio: plan.aspect_ratio.map(to_t2v_aspect_ratio),
-        generate_audio: plan.generate_audio,
+        request: EnqueueSeedance1p5ProTextToVideoRequest {
+          prompt: plan.prompt.clone(),
+          resolution: plan.resolution.map(to_t2v_resolution),
+          duration: plan.duration.map(to_t2v_duration),
+          aspect_ratio: plan.aspect_ratio.map(to_t2v_aspect_ratio),
+          generate_audio: plan.generate_audio,
+        },
         webhook_url: fal_client.webhook_url.as_str(),
         api_key: &fal_client.api_key,
       };
@@ -38,13 +40,15 @@ pub async fn execute_fal_seedance_1p5_pro(
     }
     FalSeedance1p5ProMode::ImageToVideo { image_url, end_image_url } => {
       let args = EnqueueSeedance1p5ProImageToVideoArgs {
-        prompt: plan.prompt.clone(),
-        image_url: image_url.clone(),
-        end_image_url: end_image_url.clone(),
-        resolution: plan.resolution.map(to_i2v_resolution),
-        duration: plan.duration.map(to_i2v_duration),
-        aspect_ratio: plan.aspect_ratio.map(to_i2v_aspect_ratio),
-        generate_audio: plan.generate_audio,
+        request: EnqueueSeedance1p5ProImageToVideoRequest {
+          prompt: plan.prompt.clone(),
+          image_url: image_url.clone(),
+          end_image_url: end_image_url.clone(),
+          resolution: plan.resolution.map(to_i2v_resolution),
+          duration: plan.duration.map(to_i2v_duration),
+          aspect_ratio: plan.aspect_ratio.map(to_i2v_aspect_ratio),
+          generate_audio: plan.generate_audio,
+        },
         webhook_url: fal_client.webhook_url.as_str(),
         api_key: &fal_client.api_key,
       };

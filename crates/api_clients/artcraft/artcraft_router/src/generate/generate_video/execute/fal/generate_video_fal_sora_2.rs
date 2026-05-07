@@ -10,12 +10,12 @@ use crate::generate::generate_video::plan::fal::plan_generate_video_fal_sora_2::
 use fal_client::requests::webhook::video::image::enqueue_sora_2_image_to_video_webhook::{
   enqueue_sora_2_image_to_video_webhook, EnqueueSora2ImageToVideoArgs,
   EnqueueSora2ImageToVideoAspectRatio, EnqueueSora2ImageToVideoDurationSeconds,
-  EnqueueSora2ImageToVideoResolution,
+  EnqueueSora2ImageToVideoRequest, EnqueueSora2ImageToVideoResolution,
 };
 use fal_client::requests::webhook::video::text::enqueue_sora_2_text_to_video_webhook::{
   enqueue_sora_2_text_to_video_webhook, EnqueueSora2TextToVideoArgs,
-  EnqueueSora2TextToVideoAspectRatio, EnqueueSora2TextToVideoDurationSeconds,
-  EnqueueSora2TextToVideoResolution,
+  EnqueueSora2TextToVideoRequest, EnqueueSora2TextToVideoAspectRatio,
+  EnqueueSora2TextToVideoDurationSeconds, EnqueueSora2TextToVideoResolution,
 };
 
 pub async fn execute_fal_sora_2(
@@ -26,10 +26,12 @@ pub async fn execute_fal_sora_2(
     FalSora2Mode::TextToVideo => {
       // Text-to-video does not support Auto aspect ratio or Auto resolution.
       let args = EnqueueSora2TextToVideoArgs {
-        prompt: plan.prompt.clone(),
-        resolution: plan.resolution.and_then(to_t2v_resolution),
-        duration: plan.duration.map(to_t2v_duration),
-        aspect_ratio: plan.aspect_ratio.and_then(to_t2v_aspect_ratio),
+        request: EnqueueSora2TextToVideoRequest {
+          prompt: plan.prompt.clone(),
+          resolution: plan.resolution.and_then(to_t2v_resolution),
+          duration: plan.duration.map(to_t2v_duration),
+          aspect_ratio: plan.aspect_ratio.and_then(to_t2v_aspect_ratio),
+        },
         webhook_url: fal_client.webhook_url.as_str(),
         api_key: &fal_client.api_key,
       };
@@ -37,11 +39,13 @@ pub async fn execute_fal_sora_2(
     }
     FalSora2Mode::ImageToVideo { image_url } => {
       let args = EnqueueSora2ImageToVideoArgs {
-        prompt: plan.prompt.clone(),
-        image_url: image_url.clone(),
-        duration: plan.duration.map(to_i2v_duration),
-        resolution: plan.resolution.map(to_i2v_resolution),
-        aspect_ratio: plan.aspect_ratio.map(to_i2v_aspect_ratio),
+        request: EnqueueSora2ImageToVideoRequest {
+          prompt: plan.prompt.clone(),
+          image_url: image_url.clone(),
+          duration: plan.duration.map(to_i2v_duration),
+          resolution: plan.resolution.map(to_i2v_resolution),
+          aspect_ratio: plan.aspect_ratio.map(to_i2v_aspect_ratio),
+        },
         webhook_url: fal_client.webhook_url.as_str(),
         api_key: &fal_client.api_key,
       };

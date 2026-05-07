@@ -10,11 +10,12 @@ use crate::generate::generate_video::plan::fal::plan_generate_video_fal_kling_2_
 };
 use fal_client::requests::webhook::video::image::enqueue_kling_v2p5_turbo_pro_image_to_video_webhook::{
   enqueue_kling_v2p5_turbo_pro_image_to_video_webhook, EnqueueKlingV2p5TurboProImageToVideoArgs,
-  EnqueueKlingV2p5TurboProImageToVideoDurationSeconds,
+  EnqueueKlingV2p5TurboProImageToVideoRequest, EnqueueKlingV2p5TurboProImageToVideoDurationSeconds,
 };
 use fal_client::requests::webhook::video::text::enqueue_kling_v2p5_turbo_pro_text_to_video_webhook::{
   enqueue_kling_v2p5_turbo_pro_text_to_video_webhook, EnqueueKlingV2p5TurboProTextToVideoArgs,
-  EnqueueKlingV2p5TurboProTextToVideoAspectRatio, EnqueueKlingV2p5TurboProTextToVideoDurationSeconds,
+  EnqueueKlingV2p5TurboProTextToVideoRequest, EnqueueKlingV2p5TurboProTextToVideoAspectRatio,
+  EnqueueKlingV2p5TurboProTextToVideoDurationSeconds,
 };
 
 pub async fn execute_fal_kling_2_5_turbo_pro(
@@ -24,10 +25,12 @@ pub async fn execute_fal_kling_2_5_turbo_pro(
   let webhook_response = match &plan.mode {
     FalKling2p5TurboProMode::TextToVideo => {
       let args = EnqueueKlingV2p5TurboProTextToVideoArgs {
-        prompt: plan.prompt.clone(),
-        negative_prompt: plan.negative_prompt.clone(),
-        duration: plan.duration.map(to_t2v_duration),
-        aspect_ratio: plan.aspect_ratio.map(to_t2v_aspect_ratio),
+        request: EnqueueKlingV2p5TurboProTextToVideoRequest {
+          prompt: plan.prompt.clone(),
+          negative_prompt: plan.negative_prompt.clone(),
+          duration: plan.duration.map(to_t2v_duration),
+          aspect_ratio: plan.aspect_ratio.map(to_t2v_aspect_ratio),
+        },
         webhook_url: fal_client.webhook_url.as_str(),
         api_key: &fal_client.api_key,
       };
@@ -35,11 +38,13 @@ pub async fn execute_fal_kling_2_5_turbo_pro(
     }
     FalKling2p5TurboProMode::ImageToVideo { image_url, end_image_url } => {
       let args = EnqueueKlingV2p5TurboProImageToVideoArgs {
-        prompt: plan.prompt.clone(),
-        image_url: image_url.clone(),
-        tail_image_url: end_image_url.clone(),
-        negative_prompt: plan.negative_prompt.clone(),
-        duration: plan.duration.map(to_i2v_duration),
+        request: EnqueueKlingV2p5TurboProImageToVideoRequest {
+          prompt: plan.prompt.clone(),
+          image_url: image_url.clone(),
+          tail_image_url: end_image_url.clone(),
+          negative_prompt: plan.negative_prompt.clone(),
+          duration: plan.duration.map(to_i2v_duration),
+        },
         webhook_url: fal_client.webhook_url.as_str(),
         api_key: &fal_client.api_key,
       };

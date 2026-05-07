@@ -7,9 +7,11 @@ use crate::generate::generate_image::generate_image_response::{
 use crate::generate::generate_image::plan::fal::plan_generate_image_fal_gpt_image_1p5::PlanFalGptImage1p5;
 use fal_client::requests::webhook::image::edit::enqueue_gpt_image_1p5_edit_image_webhook::{
   enqueue_gpt_image_1p5_image_edit_webhook, EnqueueGptImage1p5EditImageArgs,
+  EnqueueGptImage1p5EditImageRequest,
 };
 use fal_client::requests::webhook::image::text::enqueue_gpt_image_1p5_text_to_image_webhook::{
   enqueue_gpt_image_1p5_text_to_image_webhook, EnqueueGptImage1p5TextToImageArgs,
+  EnqueueGptImage1p5TextToImageRequest,
 };
 
 pub async fn execute_fal_gpt_image_1p5(
@@ -18,12 +20,14 @@ pub async fn execute_fal_gpt_image_1p5(
 ) -> Result<GenerateImageResponse, ArtcraftRouterError> {
   let webhook_response = if plan.image_urls.is_empty() {
     let args = EnqueueGptImage1p5TextToImageArgs {
-      prompt: plan.prompt.as_deref().unwrap_or(""),
-      num_images: plan.num_images.to_t2i(),
-      image_size: plan.image_size.map(|s| s.to_t2i()),
-      background: None,
-      quality: Some(plan.quality.to_t2i()),
-      output_format: None,
+      request: EnqueueGptImage1p5TextToImageRequest {
+        prompt: plan.prompt.as_deref().unwrap_or("").to_string(),
+        num_images: plan.num_images.to_t2i(),
+        image_size: plan.image_size.map(|s| s.to_t2i()),
+        background: None,
+        quality: Some(plan.quality.to_t2i()),
+        output_format: None,
+      },
       webhook_url: fal_client.webhook_url.as_str(),
       api_key: &fal_client.api_key,
     };
@@ -32,15 +36,17 @@ pub async fn execute_fal_gpt_image_1p5(
       .map_err(|e| ArtcraftRouterError::Provider(ProviderError::Fal(e)))?
   } else {
     let args = EnqueueGptImage1p5EditImageArgs {
-      prompt: plan.prompt.as_deref().unwrap_or(""),
-      image_urls: plan.image_urls.clone(),
-      num_images: plan.num_images.to_edit(),
-      mask_image_url: None,
-      image_size: plan.image_size.map(|s| s.to_edit()),
-      background: None,
-      quality: Some(plan.quality.to_edit()),
-      input_fidelity: None,
-      output_format: None,
+      request: EnqueueGptImage1p5EditImageRequest {
+        prompt: plan.prompt.as_deref().unwrap_or("").to_string(),
+        image_urls: plan.image_urls.clone(),
+        num_images: plan.num_images.to_edit(),
+        mask_image_url: None,
+        image_size: plan.image_size.map(|s| s.to_edit()),
+        background: None,
+        quality: Some(plan.quality.to_edit()),
+        input_fidelity: None,
+        output_format: None,
+      },
       webhook_url: fal_client.webhook_url.as_str(),
       api_key: &fal_client.api_key,
     };
