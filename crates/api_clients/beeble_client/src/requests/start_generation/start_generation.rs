@@ -4,7 +4,7 @@ use crate::creds::beeble_api_key::BeebleApiKey;
 use crate::error::beeble_client_error::BeebleClientError;
 use crate::error::beeble_error::BeebleError;
 use crate::error::beeble_generic_api_error::BeebleGenericApiError;
-use crate::error::beeble_specific_api_error::BeebleSpecificApiError;
+use crate::requests::start_generation::handle_error_response::{handle_error_response, ErrorContext};
 use crate::requests::start_generation::request_types::*;
 
 const BEEBLE_API_BASE_URL: &str = "https://api.beeble.ai/v1";
@@ -110,7 +110,7 @@ pub async fn start_generation(args: StartGenerationArgs) -> Result<StartGenerati
     reference_image_uri: req.reference_image_uri,
     alpha_uri: req.alpha_uri,
     max_resolution: req.max_resolution,
-    callback_url: req.callback_url,
+    callback_url: req.callback_url.clone(),
     idempotency_key: req.idempotency_key,
   };
 
@@ -127,24 +127,17 @@ pub async fn start_generation(args: StartGenerationArgs) -> Result<StartGenerati
     .map_err(|err| BeebleGenericApiError::ReqwestError(err))?;
 
   let status = response.status();
+
   let response_body = response.text()
     .await
     .map_err(|err| BeebleGenericApiError::ReqwestError(err))?;
 
   info!("Beeble start generation response: status={}", status);
 
-  match status.as_u16() {
-    401 => return Err(BeebleSpecificApiError::Unauthorized.into()),
-    402 => return Err(BeebleSpecificApiError::InsufficientCredits.into()),
-    409 => return Err(BeebleSpecificApiError::IdempotencyConflict.into()),
-    429 => return Err(BeebleSpecificApiError::RateLimited.into()),
-    _ if !status.is_success() => {
-      return Err(BeebleGenericApiError::UncategorizedBadResponseWithStatusAndBody {
-        status_code: status,
-        body: response_body,
-      }.into());
-    }
-    _ => {}
+  if !status.is_success() {
+    return handle_error_response(status, &response_body, &ErrorContext {
+      maybe_callback_url: req.callback_url.as_deref(),
+    });
   }
 
   let parsed: GenerationJobResponseBody = serde_json::from_str(&response_body)
