@@ -190,6 +190,9 @@
       "path": "./libs/components/checkbox"
     },
     {
+      "path": "./libs/components/pagescene"
+    },
+    {
       "path": "./libs/components/vfx"
     }
   ]

@@ -1,0 +1,82 @@
+{
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "../button-icon"
+    },
+    {
+      "path": "../loading-spinner"
+    },
+    {
+      "path": "../label"
+    },
+    {
+      "path": "../settings-modal"
+    },
+    {
+      "path": "../button-icon-select"
+    },
+    {
+      "path": "../badge"
+    },
+    {
+      "path": "../input"
+    },
+    {
+      "path": "../close-button"
+    },
+    {
+      "path": "../modal"
+    },
+    {
+      "path": "../checkbox"
+    },
+    {
+      "path": "../tooltip"
+    },
+    {
+      "path": "../button"
+    },
+    {
+      "path": "../button-dropdown"
+    },
+    {
+      "path": "../popover"
+    },
+    {
+      "path": "../promptbox"
+    },
+    {
+      "path": "../loading"
+    },
+    {
+      "path": "../pricing-modal"
+    },
+    {
+      "path": "../help-menu"
+    },
+    {
+      "path": "../../api-enums"
+    },
+    {
+      "path": "../../model-list"
+    },
+    {
+      "path": "../model-selector"
+    },
+    {
+      "path": "../gallery-modal"
+    },
+    {
+      "path": "../../common"
+    },
+    {
+      "path": "./tsconfig.lib.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    }
+  ],
+  "extends": "../../../tsconfig.base.json"
+}

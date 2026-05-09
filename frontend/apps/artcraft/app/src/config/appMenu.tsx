@@ -18,7 +18,6 @@ import {
   useStoryboardPageEnabled,
 } from "@storyteller/ui-settings-modal";
 import { useTabStore, TabId } from "~/pages/Stores/TabState";
-import { set3DPageMounted } from "~/pages/PageEnigma/Editor/editor";
 
 export type AppId =
   | "IMAGE"
@@ -289,11 +288,6 @@ export const goToApp = (action?: string) => {
       const { enabled, storyboardPageEnabled } =
         useExperimentalStore.getState();
       if (!enabled || !storyboardPageEnabled) return;
-    }
-    if (action === "3D") {
-      set3DPageMounted(true);
-    } else {
-      set3DPageMounted(false);
     }
     useTabStore.getState().setActiveTab(action as TabId);
   }

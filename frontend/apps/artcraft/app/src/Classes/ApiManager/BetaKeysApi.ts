@@ -1,6 +1,6 @@
 import { ApiManager, ApiResponse } from "./ApiManager";
 import { BetaKey } from "~/models";
-import { Pagination } from "~/pages/PageEnigma/models";
+import type { Pagination } from "@storyteller/ui-pagescene";
 
 export class BetaKeysApi extends ApiManager {
   public CreateBetaKey({

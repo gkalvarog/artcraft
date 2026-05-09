@@ -25,10 +25,9 @@ import {
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
 import { useTabStore } from "../../pages/Stores/TabState";
-import { addObject } from "../../pages/PageEnigma/signals/objectGroup/addObject";
-import { set3DPageMounted } from "../../pages/PageEnigma/Editor/editor";
+import { addObject, getActiveEditor } from "@storyteller/ui-pagescene";
+import type { MediaItem } from "@storyteller/ui-pagescene";
 import { AssetType } from "~/enums";
-import type { MediaItem } from "../../pages/PageEnigma/models";
 import { SPLAT_MODELS } from "@storyteller/model-list";
 import {
   ClassyModelSelector,
@@ -974,7 +973,6 @@ export const ImageTo3DExperience = ({
                     variant="primary"
                     className="min-w-[120px]"
                     onClick={() => {
-                      set3DPageMounted(true);
                       useTabStore.getState().setActiveTab("3D");
                       setTimeout(() => {
                         const mediaItem = {
@@ -986,8 +984,13 @@ export const ImageTo3DExperience = ({
                         } as MediaItem & {
                           position: { x: number; y: number; z: number };
                         };
-                        addObject(mediaItem);
-                        toast.success("Added to 3D scene");
+                        const editor = getActiveEditor();
+                        if (editor) {
+                          void addObject(editor, mediaItem);
+                          toast.success("Added to 3D scene");
+                        } else {
+                          toast.error("3D editor isn't ready yet");
+                        }
                       }, 500);
                     }}
                   >

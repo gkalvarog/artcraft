@@ -1,5 +1,5 @@
 import { ApiManager, ApiResponse } from "./ApiManager";
-import { Pagination } from "~/pages/PageEnigma/models";
+import type { Pagination } from "@storyteller/ui-pagescene";
 import { authentication } from "~/signals";
 import { ZsDataset } from "~/models/Dataset";
 

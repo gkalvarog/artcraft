@@ -29,25 +29,13 @@
   },
   "references": [
     {
-      "path": "../../libs/components/pagination"
-    },
-    {
-      "path": "../../libs/components/search"
-    },
-    {
       "path": "../../libs/components/badge"
     },
     {
-      "path": "../../libs/components/button-icon"
+      "path": "../../libs/components/slider-v2"
     },
     {
-      "path": "../../libs/components/button-icon-select"
-    },
-    {
-      "path": "../../libs/components/label"
-    },
-    {
-      "path": "../../libs/components/button-dropdown"
+      "path": "../../libs/components/loading-spinner"
     },
     {
       "path": "../../libs/components/toaster"
@@ -59,16 +47,10 @@
       "path": "../../libs/soundboard"
     },
     {
-      "path": "../../libs/components/slider-v2"
-    },
-    {
       "path": "../../libs/components/pagedraw"
     },
     {
       "path": "../../libs/components/settings-modal"
-    },
-    {
-      "path": "../../libs/components/loading-spinner"
     },
     {
       "path": "../../libs/components/promptbox"
@@ -168,6 +150,9 @@
     },
     {
       "path": "../../libs/tauri-api"
+    },
+    {
+      "path": "../../libs/components/pagescene"
     },
     {
       "path": "../../libs/tauri-utils"
