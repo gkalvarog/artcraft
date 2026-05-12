@@ -1,6 +1,6 @@
 [build]
-command = "./apps/artcraft-website/script/netlify_build.sh"
-publish = "apps/artcraft-website/dist/"
+command = "bash ./apps/artcraft-webapp/script/netlify_build.sh"
+publish = "apps/artcraft-webapp/dist/"
 
 [[headers]]
 for = "/build/*"
