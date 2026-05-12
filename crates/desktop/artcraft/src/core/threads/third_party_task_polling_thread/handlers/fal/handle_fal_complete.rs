@@ -1,12 +1,11 @@
-use crate::core::events::basic_sendable_event_trait::BasicSendableEvent;
-use crate::core::events::generation_events::common::{GenerationAction, GenerationServiceProvider};
-use crate::core::events::generation_events::generation_complete_event::GenerationCompleteEvent;
 use crate::core::state::app_env_configs::app_env_configs::AppEnvConfigs;
+use crate::core::threads::third_party_task_polling_thread::events::notify_frontend_of_completion::{
+  notify_frontend_of_completion, CompletionData,
+};
 use crate::core::state::data_dir::app_data_root::AppDataRoot;
 use crate::core::state::data_dir::trait_data_subdir::DataSubdir;
 use crate::core::state::task_database::TaskDatabase;
 use crate::services::storyteller::state::storyteller_credential_manager::StorytellerCredentialManager;
-use artcraft_api_defs::prompts::create_prompt::CreatePromptRequest;
 use artcraft_api_defs::utils::media_links_to_thumbnail_template::media_links_to_thumbnail_template;
 use artcraft_client::credentials::storyteller_credential_set::StorytellerCredentialSet;
 use artcraft_client::error::api_error::ApiError;
@@ -21,7 +20,6 @@ use artcraft_client::endpoints::media_files::upload_image_media_file_from_file::
 use artcraft_client::endpoints::media_files::upload_video_media_file_from_file::{
   upload_video_media_file_from_file, UploadVideoFromFileArgs,
 };
-use artcraft_client::endpoints::prompts::create_prompt::create_prompt;
 use enums::common::generation_provider::GenerationProvider;
 use enums::tauri::tasks::task_media_file_class::TaskMediaFileClass;
 use enums::tauri::tasks::task_type::TaskType;
@@ -39,6 +37,7 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tokens::tokens::batch_generations::BatchGenerationToken;
 use tokens::tokens::media_files::MediaFileToken;
+use tokens::tokens::prompts::PromptToken;
 use uuid_utils::uuid::generate_random_uuid;
 
 pub async fn handle_fal_complete(
@@ -82,7 +81,7 @@ async fn handle_fal_complete_inner(
   let extracted = job_response.extracted_contents;
 
   // Determine what kind of media we got and collect download URLs.
-  let (urls, media_class, generation_action) = collect_media_urls(task, &extracted)?;
+  let (urls, media_class) = collect_media_urls(task, &extracted)?;
 
   if urls.is_empty() {
     warn!("[FalComplete] Task {} completed but no downloadable media found in response", task.id.as_str());
@@ -90,26 +89,15 @@ async fn handle_fal_complete_inner(
     return Ok(());
   }
 
-  // Create a prompt record
-  let prompt_response = create_prompt(
-    &app_env_configs.storyteller_host,
-    Some(&creds),
-    CreatePromptRequest {
-      uuid_idempotency_token: generate_random_uuid(),
-      positive_prompt: None,
-      negative_prompt: None,
-      model_type: None,
-      generation_provider: Some(GenerationProvider::Fal),
-      maybe_generation_mode: None,
-      maybe_aspect_ratio: None,
-      maybe_resolution: None,
-      maybe_batch_count: None,
-      maybe_generate_audio: None,
-      maybe_duration_seconds: None,
-    },
-  ).await?;
+  // Use the prompt token from the task record (created at generation time).
+  let maybe_prompt_token = task.prompt_token.as_ref()
+    .map(|s| PromptToken::new_from_str(s));
 
-  info!("[FalComplete] Created prompt: {:?}", prompt_response.prompt_token);
+  if maybe_prompt_token.is_some() {
+    info!("[FalComplete] Using prompt token from task: {:?}", maybe_prompt_token);
+  } else {
+    warn!("[FalComplete] Task {} has no prompt token, uploading without prompt association", task.id.as_str());
+  }
 
   let maybe_batch_token = if urls.len() > 1 {
     let token = BatchGenerationToken::generate();
@@ -132,7 +120,7 @@ async fn handle_fal_complete_inner(
       &creds,
       app_env_configs,
       &download_path,
-      &prompt_response.prompt_token,
+      maybe_prompt_token.as_ref(),
       maybe_batch_token.as_ref(),
       media_class,
     ).await?;
@@ -145,13 +133,15 @@ async fn handle_fal_complete_inner(
   }
 
   // Look up CDN/thumbnail URLs for the primary media file
-  let mut maybe_cdn_url = None;
+  let mut maybe_cdn_url: Option<reqwest::Url> = None;
+  let mut maybe_cdn_url_str: Option<String> = None;
   let mut maybe_thumbnail_url_template = None;
 
   if let Some(media_file_token) = maybe_primary_media_file_token.as_ref() {
     match get_media_file(&app_env_configs.storyteller_host, media_file_token).await {
       Ok(response) => {
-        maybe_cdn_url = Some(response.media_file.media_links.cdn_url.to_string());
+        maybe_cdn_url = Some(response.media_file.media_links.cdn_url.clone());
+        maybe_cdn_url_str = Some(response.media_file.media_links.cdn_url.to_string());
         maybe_thumbnail_url_template = media_links_to_thumbnail_template(&response.media_file.media_links)
           .map(|s| s.to_string());
       }
@@ -161,24 +151,35 @@ async fn handle_fal_complete_inner(
     }
   }
 
-  // Mark the task as completed
+  // Mark the task as completed in the local database
   let updated = update_successful_task_status_with_metadata(UpdateSuccessfulTaskArgs {
     db: task_database.get_connection(),
     task_id: &task.id,
     maybe_batch_token: maybe_batch_token.as_ref(),
     maybe_primary_media_file_token: maybe_primary_media_file_token.as_ref(),
     maybe_primary_media_file_class: Some(media_class),
-    maybe_primary_media_file_cdn_url: maybe_cdn_url.as_deref(),
+    maybe_primary_media_file_cdn_url: maybe_cdn_url_str.as_deref(),
     maybe_primary_media_file_thumbnail_url_template: maybe_thumbnail_url_template.as_deref(),
   }).await?;
 
   if updated {
-    let event = GenerationCompleteEvent {
-      action: Some(generation_action),
-      service: GenerationServiceProvider::Fal,
-      model: None,
-    };
-    event.send_infallible(app_handle);
+    if let Some(primary_token) = maybe_primary_media_file_token {
+      let completion = CompletionData {
+        primary_media_file_token: primary_token,
+        maybe_cdn_url,
+        maybe_thumbnail_url_template,
+        maybe_batch_token,
+        media_class,
+      };
+
+      notify_frontend_of_completion(
+        app_handle,
+        &app_env_configs.storyteller_host,
+        Some(&creds),
+        task,
+        &completion,
+      ).await;
+    }
   }
 
   info!("[FalComplete] Task {} fully handled", task.id.as_str());
@@ -192,10 +193,10 @@ async fn handle_fal_complete_inner(
 fn collect_media_urls(
   task: &Task,
   extracted: &Option<PollResponseExtractedContents>,
-) -> Result<(Vec<String>, TaskMediaFileClass, GenerationAction), Box<dyn std::error::Error>> {
+) -> Result<(Vec<String>, TaskMediaFileClass), Box<dyn std::error::Error>> {
   let extracted = match extracted {
     Some(e) => e,
-    None => return Ok((vec![], TaskMediaFileClass::Image, GenerationAction::GenerateImage)),
+    None => return Ok((vec![], TaskMediaFileClass::Image)),
   };
 
   // Images (batch)
@@ -204,32 +205,32 @@ fn collect_media_urls(
       .filter_map(|img| img.url.clone())
       .collect();
     if !urls.is_empty() {
-      return Ok((urls, TaskMediaFileClass::Image, GenerationAction::GenerateImage));
+      return Ok((urls, TaskMediaFileClass::Image));
     }
   }
 
   // Single image (e.g. background removal)
   if let Some(image) = &extracted.image {
     if let Some(url) = &image.url {
-      return Ok((vec![url.clone()], TaskMediaFileClass::Image, GenerationAction::GenerateImage));
+      return Ok((vec![url.clone()], TaskMediaFileClass::Image));
     }
   }
 
   // Video
   if let Some(video) = &extracted.video {
     if let Some(url) = &video.url {
-      return Ok((vec![url.clone()], TaskMediaFileClass::Video, GenerationAction::GenerateVideo));
+      return Ok((vec![url.clone()], TaskMediaFileClass::Video));
     }
   }
 
   // 3D model (GLB)
   if let Some(glb) = &extracted.model_glb {
     if let Some(url) = &glb.url {
-      return Ok((vec![url.clone()], TaskMediaFileClass::Dimensional, GenerationAction::ImageTo3d));
+      return Ok((vec![url.clone()], TaskMediaFileClass::Dimensional));
     }
   }
 
-  Ok((vec![], TaskMediaFileClass::Image, GenerationAction::GenerateImage))
+  Ok((vec![], TaskMediaFileClass::Image))
 }
 
 async fn download_file(
@@ -261,14 +262,14 @@ async fn upload_to_backend(
   creds: &StorytellerCredentialSet,
   app_env_configs: &AppEnvConfigs,
   download_path: &PathBuf,
-  prompt_token: &tokens::tokens::prompts::PromptToken,
+  maybe_prompt_token: Option<&PromptToken>,
   maybe_batch_token: Option<&BatchGenerationToken>,
   media_class: TaskMediaFileClass,
 ) -> Result<MediaFileToken, Box<dyn std::error::Error>> {
   let mut retry_delay_secs = INITIAL_RETRY_DELAY_SECS;
 
   for attempt in 0..MAX_UPLOAD_RETRIES {
-    let result = try_upload(creds, app_env_configs, download_path, prompt_token, maybe_batch_token, media_class).await;
+    let result = try_upload(creds, app_env_configs, download_path, maybe_prompt_token, maybe_batch_token, media_class).await;
 
     match result {
       Ok(token) => return Ok(token),
@@ -300,7 +301,7 @@ async fn try_upload(
   creds: &StorytellerCredentialSet,
   app_env_configs: &AppEnvConfigs,
   download_path: &PathBuf,
-  prompt_token: &tokens::tokens::prompts::PromptToken,
+  maybe_prompt_token: Option<&PromptToken>,
   maybe_batch_token: Option<&BatchGenerationToken>,
   media_class: TaskMediaFileClass,
 ) -> Result<MediaFileToken, StorytellerError> {
@@ -310,7 +311,8 @@ async fn try_upload(
         api_host: &app_env_configs.storyteller_host,
         maybe_creds: Some(creds),
         path: download_path,
-        maybe_prompt_token: Some(prompt_token),
+        maybe_prompt_token,
+        maybe_generation_provider: Some(GenerationProvider::Fal),
       }).await?;
       result.media_file_token
     }
@@ -319,6 +321,7 @@ async fn try_upload(
         api_host: &app_env_configs.storyteller_host,
         maybe_creds: Some(creds),
         path: download_path,
+        maybe_generation_provider: Some(GenerationProvider::Fal),
       }).await?;
       result.media_file_token
     }
@@ -328,8 +331,9 @@ async fn try_upload(
         maybe_creds: Some(creds),
         path: download_path,
         is_intermediate_system_file: false,
-        maybe_prompt_token: Some(prompt_token),
+        maybe_prompt_token,
         maybe_batch_token,
+        maybe_generation_provider: Some(GenerationProvider::Fal),
       }).await?;
       result.media_file_token
     }
@@ -337,3 +341,4 @@ async fn try_upload(
 
   Ok(media_token)
 }
+

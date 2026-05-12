@@ -113,6 +113,7 @@ pub async fn handle_artcraft_flux_pro_1_inpaint(
     provider_job_id: Some(job_id.to_string()),
     task_type: TaskType::ImageInpaintEdit,
     maybe_queue_status_url: None,
+    maybe_prompt_token: None,
     maybe_queue_response_url: None,
   })
 }
@@ -148,6 +149,7 @@ async fn get_mask(
     image_bytes: image_bytes.0,
     image_type: ImageType::Png,
     is_intermediate_system_file: true,
+      maybe_generation_provider: None,
   }).await
       .map_err(|err| {
         error!("Failed to upload image media file: {:?}", err);
