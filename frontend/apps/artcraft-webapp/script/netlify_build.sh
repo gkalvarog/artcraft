@@ -3,10 +3,10 @@
 set -euxo pipefail 
 
 echo "Run build script (TODO: Make strict)"
-nx build artcraft-website
+nx build artcraft-webapp
 
 echo "Change to project dir"
-pushd apps/artcraft-website/
+pushd apps/artcraft-webapp/
 
 echo "Copy netlify configs into dist"
 #cp _headers dist/
