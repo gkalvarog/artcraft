@@ -32,6 +32,8 @@ pub async fn list_tasks_by_provider_and_tokens(
       provider,
       provider_job_id,
       frontend_caller,
+      queue_status_url,
+      queue_response_url,
       frontend_subscriber_id,
       frontend_subscriber_payload
     FROM tasks
@@ -72,6 +74,8 @@ pub async fn list_tasks_by_provider_and_tokens(
           .transpose()?,
       provider: GenerationProvider::from_str(&task.provider)?,
       provider_job_id: task.provider_job_id,
+      queue_status_url: task.queue_status_url,
+      queue_response_url: task.queue_response_url,
       frontend_caller: task.frontend_caller
           .map(|caller| TauriCommandCaller::from_str(&caller))
           .transpose()?,

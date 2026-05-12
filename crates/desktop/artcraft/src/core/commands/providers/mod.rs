@@ -1,2 +1,4 @@
-pub mod get_provider_order_command;
-pub mod set_provider_order_command;
+pub mod deprecated;
+pub mod provider_list_command;
+pub mod provider_set_api_key_command;
+pub mod provider_clear_command;
