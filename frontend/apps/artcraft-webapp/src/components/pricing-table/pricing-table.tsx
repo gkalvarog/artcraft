@@ -9,6 +9,11 @@ import { twMerge } from "tailwind-merge";
 import { useState, useEffect } from "react";
 import { TabSelector } from "@storyteller/ui-tab-selector";
 import { UsersApi, BillingApi, UserInfo } from "@storyteller/api";
+import {
+  getLandingUrl,
+  getReferralUsername,
+  getReferrer,
+} from "@storyteller/common";
 import { useNavigate } from "react-router-dom";
 
 const billingTabs = [
@@ -199,8 +204,9 @@ const PricingTable = ({
         const response = await billingApi.UserSignupSubscriptionCheckout({
           plan: apiPlanSlug,
           cadence: cadence,
-          maybeReferralUrl: (window as any).cached_referrer,
-          maybeLandingUrl: (window as any).cached_landing_url,
+          maybeReferralUrl: getReferrer(),
+          maybeLandingUrl: getLandingUrl(),
+          maybeReferralUsername: getReferralUsername(),
         });
 
         if (!response.success || !response.data) {
