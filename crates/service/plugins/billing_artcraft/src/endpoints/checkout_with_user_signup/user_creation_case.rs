@@ -21,6 +21,7 @@ use stripe_checkout::checkout_session::{CreateCheckoutSession, CreateCheckoutSes
 use stripe_shared::{CheckoutSession, CheckoutSessionMode, PriceId};
 use users::email::email_to_gravatar_hash::email_to_gravatar_hash;
 use users::email::generate_random_synthetic_email::generate_random_synthetic_email;
+use tokens::tokens::users::UserToken;
 use users::username::generate_random_username::generate_random_username;
 
 pub (super) async fn user_creation_case(
@@ -30,6 +31,8 @@ pub (super) async fn user_creation_case(
   stripe_config: &ArtcraftStripeConfigWithClient,
   maybe_referral_url: Option<String>,
   maybe_landing_url: Option<String>,
+  maybe_referral_partner: Option<String>,
+  maybe_referral_user_token: Option<UserToken>,
 ) -> Result<CreationPayload, CommonWebError> {
 
   let mut transaction = mysql_connection.begin()
@@ -86,6 +89,8 @@ pub (super) async fn user_creation_case(
         maybe_source,
         maybe_referral_url: maybe_referral_url.clone(),
         maybe_landing_url: maybe_landing_url.clone(),
+        maybe_referral_partner: maybe_referral_partner.clone(),
+        maybe_referral_user_token: maybe_referral_user_token.as_ref(),
       },
       Transactor::for_transaction(&mut transaction),
     ).await;

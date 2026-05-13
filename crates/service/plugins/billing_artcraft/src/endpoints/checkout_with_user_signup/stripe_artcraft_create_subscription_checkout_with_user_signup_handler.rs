@@ -5,6 +5,7 @@ use crate::endpoints::checkout_with_user_signup::user_creation_case::user_creati
 use crate::endpoints::checkout_with_user_signup::user_exists_case::user_exists_case;
 use crate::utils::artcraft_stripe_config::ArtcraftStripeConfigWithClient;
 use crate::utils::common_web_error::CommonWebError;
+use mysql_queries::queries::users::user::get::get_user_token_by_username_with_executor::get_user_token_by_username_with_executor;
 use actix_artcraft::sessions::user_sessions::http_user_session_manager::HttpUserSessionManager;
 use actix_web::web::{Data, Json};
 use actix_web::{web, HttpRequest, HttpResponse};
@@ -92,6 +93,30 @@ pub async fn stripe_artcraft_create_subscription_checkout_with_user_signup_handl
 
   let maybe_landing_url = request.maybe_landing_url.clone();
 
+  let maybe_referral_partner = request.maybe_referral_username.as_deref()
+    .map(|s| s.trim())
+    .filter(|s| !s.is_empty())
+    .map(|s| s[..s.len().min(32)].to_string());
+
+  // Look up referring user by username (optional, fail-open).
+  let maybe_referral_user_token = match request.maybe_referral_username.as_deref() {
+    Some(raw) => {
+      let lookup_username = raw.trim().to_lowercase();
+      if lookup_username.is_empty() {
+        None
+      } else {
+        match get_user_token_by_username_with_executor(&lookup_username, &mut *mysql_connection).await {
+          Ok(token) => token,
+          Err(err) => {
+            warn!("Referral user lookup failed (continuing): {:?}", err);
+            None
+          }
+        }
+      }
+    }
+    None => None,
+  };
+
   let maybe_user_metadata = internal_user_lookup
       .lookup_user_from_http_request_and_mysql_connection(&http_request, &mut mysql_connection)
       .await
@@ -110,6 +135,8 @@ pub async fn stripe_artcraft_create_subscription_checkout_with_user_signup_handl
         &stripe_config,
         maybe_referral_url,
         maybe_landing_url,
+        maybe_referral_partner,
+        maybe_referral_user_token,
       ).await?
     },
     Some(user_metadata) => {

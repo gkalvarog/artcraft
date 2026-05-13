@@ -202,9 +202,20 @@ CREATE TABLE users (
 
   -- ========== TRACKING ==========
 
-  -- Where the user signed up from (NOT NECESSARILY AN ENUM!)
-  -- For now this will be "artcraft", "fakeyou", or "storyteller", 
-  -- though we may extend or overload this to handle other cases or metadata.
+  -- Where the user signed up from
+  --
+  -- ArtCraft Values:
+  --  - "artcraft"         - (deprecated)
+  --  - "artcraft_app"     - Signup with the ArtCraft app
+  --  - "artcraft_get_web" - Signup with ArtCraft website signup flow
+  --  - "artcraft_get_s"   - Signup with ArtCraft website Stripe Checkout Flow
+  --  - "artcraft_ai_s"    - Signup with Artcraft.ai website Stripe checkout flow
+  --  - "artcraft_get_web" - Signup with ArtCraft.ai website signup flow
+  --
+  -- Other Sources:
+  --  - "fakeyou" - FakeYou signup
+  --  - "storyteller" - Storyteller.ai signup
+  --
   maybe_source VARCHAR(255) DEFAULT NULL,
 
   -- How users created their account
@@ -228,6 +239,13 @@ CREATE TABLE users (
   -- The actual URL the user first arrived at when signing up, including query params.
   -- This helps us know what marketing is effective.
   maybe_landing_url VARCHAR(255) DEFAULT NULL,
+
+  -- If a user referred this user, this is either the raw username or raw "referral code"
+  -- that this user used to sign up. This is not verified and can be used for debugging.
+  maybe_referral_partner VARCHAR(32) DEFAULT NULL,
+
+  -- If a user referred this user, we record the user token of the referrer.
+  maybe_referral_user_token VARCHAR(32) DEFAULT NULL,
 
   -- ========== MODERATION DETAILS ==========
 

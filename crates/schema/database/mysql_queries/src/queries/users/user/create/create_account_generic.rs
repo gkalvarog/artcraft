@@ -69,6 +69,13 @@ pub struct GenericCreateAccountArgs<'a> {
   /// The browser can send `window.location.href` to the backend so we know how people are finding us.
   pub maybe_landing_url: Option<String>,
 
+  /// If a user referred this user, this is the raw username or referral code.
+  /// Trimmed and truncated to 32 characters.
+  pub maybe_referral_partner: Option<String>,
+
+  /// If a user referred this user, this is the user token of the referrer.
+  pub maybe_referral_user_token: Option<&'a UserToken>,
+
   /// In production code, send this as `None`.
   /// Only provide an external user token for db integration tests and db seeding tools.
   /// This allows for knowing the user token a priori.
@@ -139,7 +146,10 @@ SET
   maybe_signup_method = ?,
 
   maybe_referral_url = ?,
-  maybe_landing_url = ?
+  maybe_landing_url = ?,
+
+  maybe_referral_partner = ?,
+  maybe_referral_user_token = ?
         "#,
       user_token.as_str(),
     
@@ -177,6 +187,9 @@ SET
 
       maybe_referral_url,
       maybe_landing_url,
+
+      args.maybe_referral_partner,
+      args.maybe_referral_user_token.map(|t| t.as_str()),
     );
 
 
