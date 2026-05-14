@@ -10,6 +10,7 @@ use crate::util::cleaners::sanitize_referral_code::sanitize_referral_code;
 use crate::util::cleaners::sanitize_referral_username::sanitize_referral_username;
 
 /// The resolved referral information to store on the new user record.
+#[derive(Debug)]
 pub struct ResolvedReferralInfo {
   /// The raw referral partner string (trimmed, max 32 chars) for `users.maybe_referral_partner`.
   pub maybe_referral_partner: Option<String>,

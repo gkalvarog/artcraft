@@ -235,6 +235,9 @@ pub async fn create_account_handler(
     &mut mysql_connection,
   ).await;
 
+  info!("Resolved referral info for maybe_referral_code {:?} and maybe_referral_username {:?} : {:?}",
+    request.maybe_referral_code, request.maybe_referral_username, referral_info);
+
   let create_account_result = create_account_from_email_and_password(
     CreateAccountFromEmailPasswordArgs {
       username: &username,
