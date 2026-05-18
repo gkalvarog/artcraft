@@ -198,13 +198,32 @@ function usePromptboxTopOffset(
   return bottomPx;
 }
 
-// Locates the promptbox stack — the `absolute bottom-4 ... flex flex-col`
-// wrapper around the image row + textarea card + toolbar — via the
-// textarea (the lib renders exactly one in the editor wrapper).
+// Locates the promptbox stack — the lib renders exactly one textarea
+// inside the editor wrapper, sitting inside an `absolute bottom-Xpx`
+// container that holds the image row + textarea card + toolbar. Class-
+// substring selectors like `[class*="bottom-4"]` work in dev (source
+// classNames) but become unreliable across the lib's dist build, so we
+// walk the ancestor chain by computed style instead: find the nearest
+// absolutely-positioned ancestor with a non-`auto` `bottom`. That's
+// the stack, regardless of how the Tailwind class survives bundling.
 function collectBottomAnchors(wrapper: HTMLElement): Set<HTMLElement> {
   const result = new Set<HTMLElement>();
   const textarea = wrapper.querySelector("textarea");
-  const promptbox = textarea?.closest('[class*="bottom-4"]');
-  if (promptbox instanceof HTMLElement) result.add(promptbox);
+  const promptbox = findBottomAnchoredAncestor(textarea, wrapper);
+  if (promptbox) result.add(promptbox);
   return result;
+}
+
+function findBottomAnchoredAncestor(
+  start: Element | null | undefined,
+  boundary: HTMLElement,
+): HTMLElement | null {
+  let el: HTMLElement | null =
+    start instanceof HTMLElement ? start.parentElement : null;
+  while (el && el !== boundary) {
+    const style = window.getComputedStyle(el);
+    if (style.position === "absolute" && style.bottom !== "auto") return el;
+    el = el.parentElement;
+  }
+  return null;
 }
