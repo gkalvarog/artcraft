@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   Route,
   Routes,
@@ -11,6 +11,7 @@ import Media from "../pages/media";
 import PressKit from "../pages/press-kit";
 import Navbar from "../components/navbar";
 import { ToastContainer } from "../components/toast/toast";
+import { WebappRedirect } from "../components/webapp-redirect";
 import CreateImage from "../pages/create-image";
 import CreateVideo from "../pages/create-video";
 import CreateVFX from "../pages/create-vfx";
@@ -33,6 +34,7 @@ import Onboarding from "../pages/onboarding";
 import Library from "../pages/library";
 import Referrals from "../pages/referrals";
 import { CheckoutSuccess, CheckoutCancel } from "../pages/checkout";
+import { USE_WEBAPP_FOR_APP_FEATURES } from "../config/links";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -45,6 +47,16 @@ function ScrollToTop() {
   return null;
 }
 
+// Returns the local page when the feature flag is off, otherwise a redirect
+// to the equivalent path on the webapp (preserving query string + hash).
+function appOrWebapp(localElement: ReactNode, webappPath: string): ReactNode {
+  return USE_WEBAPP_FOR_APP_FEATURES ? (
+    <WebappRedirect to={webappPath} />
+  ) : (
+    localElement
+  );
+}
+
 export function App() {
   return (
     <div className="relative">
@@ -54,9 +66,6 @@ export function App() {
       <Routes>
         <Route path="/" element={<Landing3 />} />
         <Route path="/landing3" element={<Landing3 />} />
-        <Route path="/create-image" element={<CreateImage />} />
-        <Route path="/create-video" element={<CreateVideo />} />
-        <Route path="/background-change" element={<CreateVFX />} />
         <Route path="/seedance-2" element={<LandingSD2 />} />
         <Route path="/download" element={<Download />} />
         <Route path="/media" element={<Media />} />
@@ -69,30 +78,91 @@ export function App() {
         <Route path="/support" element={<Support />} />
         <Route path="/news" element={<NewsIndex basePath="/news" />} />
         <Route path="/news/:slug" element={<NewsPost basePath="/news" />} />
-        <Route path="/library" element={<Library />} />
-        <Route path="/library/:filter" element={<Library />} />
-        <Route path="/referrals" element={<Referrals />} />
         <Route path="/pricing" element={<Pricing />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/forgot-password/verify" element={<VerifyReset />} />
-        <Route path="/welcome" element={<Welcome />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/checkout/success" element={<CheckoutSuccess />} />
-        <Route path="/checkout/cancel" element={<CheckoutCancel />} />
-        {/* Redirects for underscore-based URLs (legacy Stripe config) */}
+
+        {/* App routes — flip USE_WEBAPP_FOR_APP_FEATURES in config/links.ts
+            to render these locally instead of redirecting to the webapp. */}
+        <Route path="/login" element={appOrWebapp(<Login />, "/login")} />
+        <Route path="/signup" element={appOrWebapp(<Signup />, "/signup")} />
+        <Route
+          path="/forgot-password"
+          element={appOrWebapp(<ForgotPassword />, "/forgot-password")}
+        />
+        <Route
+          path="/forgot-password/verify"
+          element={appOrWebapp(<VerifyReset />, "/forgot-password/verify")}
+        />
+        <Route
+          path="/create-image"
+          element={appOrWebapp(<CreateImage />, "/create-image")}
+        />
+        <Route
+          path="/create-video"
+          element={appOrWebapp(<CreateVideo />, "/create-video")}
+        />
+        <Route
+          path="/background-change"
+          element={appOrWebapp(<CreateVFX />, "/background-change")}
+        />
+        <Route
+          path="/library"
+          element={appOrWebapp(<Library />, "/library")}
+        />
+        <Route
+          path="/library/:filter"
+          element={appOrWebapp(<Library />, "/library/:filter")}
+        />
+        <Route
+          path="/referrals"
+          element={appOrWebapp(<Referrals />, "/referrals")}
+        />
+        <Route
+          path="/welcome"
+          element={appOrWebapp(<Welcome />, "/welcome")}
+        />
+        <Route
+          path="/onboarding"
+          element={appOrWebapp(<Onboarding />, "/onboarding")}
+        />
+        <Route
+          path="/checkout/success"
+          element={appOrWebapp(<CheckoutSuccess />, "/checkout/success")}
+        />
+        <Route
+          path="/checkout/cancel"
+          element={appOrWebapp(<CheckoutCancel />, "/checkout/cancel")}
+        />
+        {/* Legacy underscore Stripe paths — always redirect to the canonical
+            slash form, going local or webapp based on the flag. */}
         <Route
           path="/checkout_success"
-          element={<Navigate to="/checkout/success" replace />}
+          element={
+            USE_WEBAPP_FOR_APP_FEATURES ? (
+              <WebappRedirect to="/checkout/success" />
+            ) : (
+              <Navigate to="/checkout/success" replace />
+            )
+          }
         />
         <Route
           path="/checkout_cancel"
-          element={<Navigate to="/checkout/cancel" replace />}
+          element={
+            USE_WEBAPP_FOR_APP_FEATURES ? (
+              <WebappRedirect to="/checkout/cancel" />
+            ) : (
+              <Navigate to="/checkout/cancel" replace />
+            )
+          }
         />
         <Route
           path="/portal_closed"
-          element={<Navigate to="/checkout/cancel" replace />}
+          element={
+            USE_WEBAPP_FOR_APP_FEATURES ? (
+              <WebappRedirect to="/checkout/cancel" />
+            ) : (
+              <Navigate to="/checkout/cancel" replace />
+            )
+          }
         />
       </Routes>
       <ToastContainer />

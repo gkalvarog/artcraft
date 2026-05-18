@@ -15,6 +15,7 @@ import {
   type PromptData,
 } from "../../components/lightbox/shared";
 import { applyRecreateFromMediaToken } from "../../lib/recreate";
+import { USE_WEBAPP_FOR_APP_FEATURES, WEBAPP_URL } from "../../config/links";
 
 interface MediaData {
   url: string | null;
@@ -119,6 +120,11 @@ export default function MediaPage() {
 
   const handleRecreate = useCallback(async () => {
     if (!media.token || !recreateMediaClass) return;
+    if (USE_WEBAPP_FOR_APP_FEATURES) {
+      // Hand off to the webapp's media viewer; user can recreate over there.
+      window.location.href = `${WEBAPP_URL}media/${media.token}`;
+      return;
+    }
     await applyRecreateFromMediaToken(media.token, recreateMediaClass, navigate);
   }, [media.token, recreateMediaClass, navigate]);
 
