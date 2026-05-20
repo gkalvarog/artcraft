@@ -358,8 +358,6 @@ function PasswordForm({ user, isEditing, onOpen, onClose }: SectionFormProps) {
       title="Password"
       collapsedDescription="Used to sign in to your account."
       editingDescription={`Choose a new password of at least ${PASSWORD_MIN} characters.`}
-      currentLabel="Current"
-      currentValue={"••••••••"}
       isEditing={isEditing}
       onOpen={handleOpen}
     >
@@ -417,8 +415,8 @@ function SectionShell({
   title: string;
   collapsedDescription: string;
   editingDescription: string;
-  currentLabel: string;
-  currentValue: string;
+  currentLabel?: string;
+  currentValue?: string;
   isEditing: boolean;
   onOpen: () => void;
   children: React.ReactNode;
@@ -444,7 +442,9 @@ function SectionShell({
         )}
       </div>
       {!isEditing ? (
-        <CurrentValue label={currentLabel} value={currentValue} />
+        currentLabel && currentValue ? (
+          <CurrentValue label={currentLabel} value={currentValue} />
+        ) : null
       ) : (
         children
       )}
