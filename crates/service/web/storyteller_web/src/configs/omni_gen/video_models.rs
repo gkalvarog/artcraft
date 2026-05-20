@@ -237,7 +237,7 @@ fn build_omni_gen_video_models() -> Vec<OmniGenVideoModelDetails> {
   models.push(OmniGenVideoModelDetails {
     model: CommonVideoModel::PreviewModel,
     model_creator: None,
-    full_name: Some("Research Preview".to_string()),
+    full_name: Some("Seedance 2.0 Plus".to_string()),
     text_prompt_supported: Some(true),
     starting_keyframe_supported: Some(true),
     ending_keyframe_supported: Some(true),
@@ -277,7 +277,7 @@ fn build_omni_gen_video_models() -> Vec<OmniGenVideoModelDetails> {
   models.push(OmniGenVideoModelDetails {
     model: CommonVideoModel::PreviewModelFast,
     model_creator: None,
-    full_name: Some("Research Preview (Fast)".to_string()),
+    full_name: Some("Seedance 2.0 Plus Fast".to_string()),
     text_prompt_supported: Some(true),
     starting_keyframe_supported: Some(true),
     ending_keyframe_supported: Some(true),
