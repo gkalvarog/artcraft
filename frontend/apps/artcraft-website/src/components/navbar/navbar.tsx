@@ -12,13 +12,14 @@ import * as NavigationMenu from "@radix-ui/react-navigation-menu";
 import { twMerge } from "tailwind-merge";
 import { Fragment } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { UsersApi } from "@storyteller/api";
+import { USER_FEATURE_FLAGS, UsersApi } from "@storyteller/api";
 import { useSession, invalidateSession } from "../../lib/session";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBars,
   faXmark,
   faGem,
+  faGift,
   faArrowRight,
   faChevronDown,
   faLifeRing,
@@ -30,6 +31,7 @@ import {
   SOCIAL_LINKS,
   USE_WEBAPP_FOR_APP_FEATURES,
   WEBAPP_URL,
+  webappUrl,
 } from "../../config/links";
 
 type NavLeaf = { name: string; href: string };
@@ -77,6 +79,9 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { user, authChecked } = useSession();
   const isLoading = !authChecked;
+  const hasReferralsFlag = !!user?.maybe_feature_flags?.includes(
+    USER_FEATURE_FLAGS.REFERRALS,
+  );
 
   const handleLogout = async () => {
     const api = new UsersApi();
@@ -285,6 +290,25 @@ export default function Navbar() {
                               </button>
                             )}
                           </MenuItem>
+                          {hasReferralsFlag && (
+                            <MenuItem>
+                              {({ active }) => (
+                                <a
+                                  href={webappUrl("/referrals")}
+                                  className={twMerge(
+                                    active ? "bg-white/[0.04]" : "",
+                                    "flex w-full items-center gap-2 px-4 py-2 text-sm text-white/70 transition-colors",
+                                  )}
+                                >
+                                  <FontAwesomeIcon
+                                    icon={faGift}
+                                    className="text-[11px] text-white/50"
+                                  />
+                                  Referrals
+                                </a>
+                              )}
+                            </MenuItem>
+                          )}
                           <MenuItem>
                             {({ active }) => (
                               <a
@@ -516,6 +540,19 @@ export default function Navbar() {
                         />
                         Discord
                       </DisclosureButton>
+                      {hasReferralsFlag && (
+                        <DisclosureButton
+                          as="a"
+                          href={webappUrl("/referrals")}
+                          className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-medium text-white/70 bg-white/[0.06] active:bg-white/10 transition-colors"
+                        >
+                          <FontAwesomeIcon
+                            icon={faGift}
+                            className="text-[10px]"
+                          />
+                          Referrals
+                        </DisclosureButton>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <img
