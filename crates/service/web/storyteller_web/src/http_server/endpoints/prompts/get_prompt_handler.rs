@@ -123,19 +123,6 @@ pub async fn get_prompt_handler(
   });
 
   let items = items.iter().filter_map(|item| {
-    match item.context_semantic_type {
-      PromptContextSemanticType::VidStartFrame => {},
-      PromptContextSemanticType::VidEndFrame => {},
-      PromptContextSemanticType::Imgref => {},
-      PromptContextSemanticType::ImgrefCharacter => {},
-      PromptContextSemanticType::ImgrefStyle => {},
-      PromptContextSemanticType::ImgrefBg => {},
-      _ => {
-        // NB: Only return images. In the future we may add context items for stages, persisted data, etc.
-        return None
-      },
-    }
-
     let bucket_path = MediaFileBucketPath::from_object_hash(
       &item.public_bucket_directory_hash,
       item.maybe_public_bucket_prefix.as_deref(),
